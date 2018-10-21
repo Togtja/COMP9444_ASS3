@@ -12,9 +12,9 @@ TEST_FREQUENCY = 100  # Num episodes to run before visualizing test accuracy
 
 # TODO: HyperParameters
 GAMMA =  0.9 # discount factor
-INITIAL_EPSILON = 0.9 # starting value of epsilon
+INITIAL_EPSILON = 0.6 # starting value of epsilon
 FINAL_EPSILON =  0.01 # final value of epsilon
-EPSILON_DECAY_STEPS = 50 # decay period
+EPSILON_DECAY_STEPS = 5 # decay period
 
 # Create environment
 # -- DO NOT MODIFY --
@@ -31,7 +31,7 @@ target_in = tf.placeholder("float", [None])
 
 # Define Network Graph
 
-hiddensize = 100
+hiddensize = 50
 #Layer1
 w1 = tf.Variable(tf.random_normal([STATE_DIM, hiddensize]))
 b1 = tf.Variable(tf.random_normal([hiddensize]))
@@ -52,7 +52,7 @@ b3 = tf.Variable(tf.random_normal([ACTION_DIM]))
     
 
 #Network outputs
-q_values = tf.matmul(preds_2, w3) + b3
+q_values = tf.matmul(preds_2, w3) + b3 #Logtis of the neural value
 q_action = \
          tf.reduce_sum(tf.multiply(q_values, action_in), reduction_indices=1)
 
@@ -119,6 +119,7 @@ for episode in range(EPISODE):
         # Do one training step
 
         if(len(replay_buffer) > BATCH_SIZE):
+            #Instead of random, take a sample of BATCH_SIZE of the best rewards
             batch = random.sample(replay_buffer, BATCH_SIZE)
         
             state_batch = [data[0] for data in batch]
@@ -135,14 +136,21 @@ for episode in range(EPISODE):
                     target_batch.append(reward_batch[i])
                 else:
                     target_batch.append((reward_batch[i] + GAMMA * np.max(q_value_batch[i])))
-                    
+            
             session.run([optimizer], feed_dict={
                 target_in: target_batch,
                 action_in: action_batch,
                 state_in: state_batch
             })
         if(len(replay_buffer) > BUFFER_SIZE):
-            replay_buffer.pop(0)
+            #replay_buffer.pop(0)
+            x = replay_buffer[0][2]
+            pos = 0
+            for i in range (1, len(replay_buffer)):
+                if(replay_buffer[i][2] < x):
+                    x = replay_buffer[i][2]
+                    pos = i
+            replay_buffer.pop(pos)
         
         # Update
         state = next_state
@@ -156,7 +164,7 @@ for episode in range(EPISODE):
         for i in range(TEST):
             state = env.reset()
             for j in range(STEP):
-                #env.render() #Un commet if you want to se the game
+                #env.render() #Uncommet if you want to se the game
                 action = np.argmax(q_values.eval(feed_dict={
                     state_in: [state]
                 }))
