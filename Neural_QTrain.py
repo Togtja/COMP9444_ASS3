@@ -129,14 +129,14 @@ for episode in range(EPISODE):
 
         if(len(replay_buffer) > BATCH_SIZE):
             #Instead of random, take a sample of BATCH_SIZE of the best rewards
-            batch = random.sample(replay_buffer, BATCH_SIZE)
-            """
+            #batch = random.sample(replay_buffer, BATCH_SIZE)
+            
             replay_buffer.sort(key=takeThird, reverse=True)
             batch = []
             
             for i in range (0, BATCH_SIZE):
                 batch.append(replay_buffer[i])
-            """
+            
             state_batch = [data[0] for data in batch]
             action_batch = [data[1] for data in batch]
             reward_batch = [data[2] for data in batch]
