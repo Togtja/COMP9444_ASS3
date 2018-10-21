@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+"""
+Spyder Editor
+
+This is a temporary script file.
+"""
 import gym
 import tensorflow as tf
 import numpy as np
@@ -31,7 +37,7 @@ target_in = tf.placeholder("float", [None])
 
 # Define Network Graph
 
-hiddensize = 50
+hiddensize = 100
 #Layer1
 w1 = tf.Variable(tf.random_normal([STATE_DIM, hiddensize]))
 b1 = tf.Variable(tf.random_normal([hiddensize]))
@@ -84,6 +90,9 @@ def explore(state, epsilon):
     one_hot_action[action] = 1
     return one_hot_action
 
+# take second element for sort
+def takeThird(elem):
+    return elem[2]
 
 replay_buffer = []
 BATCH_SIZE = 100
@@ -120,7 +129,11 @@ for episode in range(EPISODE):
 
         if(len(replay_buffer) > BATCH_SIZE):
             #Instead of random, take a sample of BATCH_SIZE of the best rewards
-            batch = random.sample(replay_buffer, BATCH_SIZE)
+            #batch = random.sample(replay_buffer, BATCH_SIZE)
+            replay_buffer.sort(key=takeThird, reverse=True)
+            batch = []
+            for i in range (1, len(BATCH_SIZE)):
+                batch.append(replay_buffer[i])
         
             state_batch = [data[0] for data in batch]
             action_batch = [data[1] for data in batch]
@@ -177,4 +190,3 @@ for episode in range(EPISODE):
                                                         'Average Reward:', ave_reward)
 
 env.close()
-
