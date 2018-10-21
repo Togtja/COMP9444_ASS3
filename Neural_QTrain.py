@@ -18,9 +18,9 @@ TEST_FREQUENCY = 100  # Num episodes to run before visualizing test accuracy
 
 # TODO: HyperParameters
 GAMMA =  0.9 # discount factor
-INITIAL_EPSILON = 0.7 # starting value of epsilon
+INITIAL_EPSILON = 0.6 # starting value of epsilon
 FINAL_EPSILON =  0.01 # final value of epsilon
-EPSILON_DECAY_STEPS = 100 # decay period
+EPSILON_DECAY_STEPS = 5 # decay period
 
 # Create environment
 # -- DO NOT MODIFY --
@@ -42,13 +42,13 @@ hiddensize = 100
 w1 = tf.Variable(tf.random_normal([STATE_DIM, hiddensize]))
 b1 = tf.Variable(tf.random_normal([hiddensize]))
 logits_1 = tf.matmul(state_in, w1) + b1
-preds_1 = tf.nn.relu(logits_1) # tf.sigmoid() or tf.tanh() or tf.relu() or anyother
+preds_1 = tf.tanh(logits_1) # tf.sigmoid() or tf.tanh() or tf.relu() or anyother
     
 #Layer2
 w2 = tf.Variable(tf.random_normal([hiddensize, hiddensize]))
 b2 = tf.Variable(tf.random_normal([hiddensize]))
 logits_2 = tf.matmul(preds_1, w2) + b2
-preds_2 = tf.nn.relu(logits_2) # tf.sigmoid() or tf.tanh() or tf.relu() or anyother
+preds_2 = tf.tanh(logits_2) # tf.sigmoid() or tf.tanh() or tf.relu() or anyother
 ####Bassed on some runs I didn don't use tf.nn.softmax()####
 
 #Layer3
@@ -65,7 +65,7 @@ q_action = \
 #Loss/Optimizer Definition
 loss = tf.reduce_sum(tf.square(target_in - q_action))
 optimizer = tf.train.AdamOptimizer().minimize(loss)
-
+loss_summary = tf.summary.scalar("TrainingLoss", loss)
 
 # Start session - Tensorflow housekeeping
 session = tf.InteractiveSession()
@@ -108,7 +108,8 @@ for episode in range(EPISODE):
     for step in range(STEP):
         action = explore(state, epsilon)
         next_state, reward, done, _ = env.step(np.argmax(action))
-         
+        #next_state, reward, done, _ = env.step(action)
+        
         replay_buffer.append((state, action, reward, next_state, done))
         """
         nextstate_q_values = q_values.eval(feed_dict={
@@ -125,18 +126,27 @@ for episode in range(EPISODE):
         else:
             target = reward + GAMMA * np.argmax(nextstate_q_values)
         """
+        
+        if(len(replay_buffer) > BUFFER_SIZE):
+            #replay_buffer.pop(0)
+            x = replay_buffer[0][2]
+            pos = 0
+            for i in range (1, len(replay_buffer)):
+                if(replay_buffer[i][2] < x):
+                    x = replay_buffer[i][2]
+                    pos = i
+            replay_buffer.pop(pos)
+            
+        state = next_state
         # Do one training step
-
         if(len(replay_buffer) > BATCH_SIZE):
             #Instead of random, take a sample of BATCH_SIZE of the best rewards
             batch = random.sample(replay_buffer, BATCH_SIZE)
-            """
-            replay_buffer.sort(key=takeThird, reverse=True)
+            """replay_buffer.sort(key=takeThird, reverse=True)
             batch = []
-            
             for i in range (0, BATCH_SIZE):
-                batch.append(replay_buffer[i])
-            """
+                batch.append(replay_buffer[i])"""
+        
             state_batch = [data[0] for data in batch]
             action_batch = [data[1] for data in batch]
             reward_batch = [data[2] for data in batch]
@@ -152,23 +162,13 @@ for episode in range(EPISODE):
                 else:
                     target_batch.append((reward_batch[i] + GAMMA * np.max(q_value_batch[i])))
             
-            session.run([optimizer], feed_dict={
+            session.run([loss_summary, optimizer], feed_dict={
                 target_in: target_batch,
                 action_in: action_batch,
                 state_in: state_batch
             })
-        if(len(replay_buffer) > BUFFER_SIZE):
-            #replay_buffer.pop(0)
-            x = replay_buffer[0][2]
-            pos = 0
-            for i in range (1, len(replay_buffer)):
-                if(replay_buffer[i][2] < x):
-                    x = replay_buffer[i][2]
-                    pos = i
-            replay_buffer.pop(pos)
         
         # Update
-        state = next_state
         if done:
             break
 
