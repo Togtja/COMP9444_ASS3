@@ -18,9 +18,9 @@ TEST_FREQUENCY = 100  # Num episodes to run before visualizing test accuracy
 
 # TODO: HyperParameters
 GAMMA =  0.9 # discount factor
-INITIAL_EPSILON = 0.6 # starting value of epsilon
+INITIAL_EPSILON = 0.7 # starting value of epsilon
 FINAL_EPSILON =  0.01 # final value of epsilon
-EPSILON_DECAY_STEPS = 5 # decay period
+EPSILON_DECAY_STEPS = 100 # decay period
 
 # Create environment
 # -- DO NOT MODIFY --
@@ -95,7 +95,7 @@ def takeThird(elem):
     return elem[2]
 
 replay_buffer = []
-BATCH_SIZE = 100
+BATCH_SIZE = 200
 BUFFER_SIZE = 4* BATCH_SIZE
 # Main learning loop
 for episode in range(EPISODE):
@@ -129,12 +129,14 @@ for episode in range(EPISODE):
 
         if(len(replay_buffer) > BATCH_SIZE):
             #Instead of random, take a sample of BATCH_SIZE of the best rewards
-            #batch = random.sample(replay_buffer, BATCH_SIZE)
+            batch = random.sample(replay_buffer, BATCH_SIZE)
+            """
             replay_buffer.sort(key=takeThird, reverse=True)
             batch = []
-            for i in range (1, len(BATCH_SIZE)):
+            
+            for i in range (0, BATCH_SIZE):
                 batch.append(replay_buffer[i])
-        
+            """
             state_batch = [data[0] for data in batch]
             action_batch = [data[1] for data in batch]
             reward_batch = [data[2] for data in batch]
